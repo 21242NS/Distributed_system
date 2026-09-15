@@ -11,12 +11,15 @@ def _mandelbrot_row(args):
     c_row = x_values + 1j * y_value
     z_row = np.zeros_like(c_row)
     mask_row = np.full(c_row.shape, True, dtype=bool)
+    escape_row = np.full(c_row.shape, n_max, dtype=np.int16)
 
-    for _ in range(n_max):
+    for iteration in range(1, n_max + 1):
         z_row[mask_row] = z_row[mask_row] ** 2 + c_row[mask_row]
-        mask_row[np.abs(z_row) > 2] = False
+        escaped = mask_row & (np.abs(z_row) > 2)
+        escape_row[escaped] = iteration
+        mask_row[escaped] = False
 
-    return mask_row
+    return escape_row
 
 
 def mandelbrot(
@@ -34,29 +37,36 @@ def mandelbrot(
     with mu.Pool(processes=n_processes) as pool:
         rows = pool.map(_mandelbrot_row, tasks, chunksize=chunk_size)
 
-    result = np.array(rows, dtype=bool)
+    result = np.array(rows, dtype=np.int16)
     return result
+
+
 def plot_mandelbrot(mandelbrot_set, boundaries=((-2, 2), (-2, 2))):
     (x_min, x_max), (y_min, y_max) = boundaries
     figure, axes = plt.subplots()
-    axes.imshow(
+    image = axes.imshow(
         mandelbrot_set,
-        cmap='binary',
+        cmap='magma',
         origin='lower',
         extent=(x_min, x_max, y_min, y_max),
         aspect='equal',
+        vmin=1,
+        vmax=mandelbrot_set.max(),
     )
     axes.set_xlim(x_min, x_max)
     axes.set_ylim(y_min, y_max)
-    axes.spines['left'].set_position('zero')
-    axes.spines['bottom'].set_position('zero')
-    axes.spines['right'].set_color('none')
-    axes.spines['top'].set_color('none')
-    axes.xaxis.set_ticks_position('bottom')
-    axes.yaxis.set_ticks_position('left')
+    if x_min <= 0 <= x_max:
+        axes.spines['left'].set_position('zero')
+        axes.spines['right'].set_color('none')
+        axes.yaxis.set_ticks_position('left')
+    if y_min <= 0 <= y_max:
+        axes.spines['bottom'].set_position('zero')
+        axes.spines['top'].set_color('none')
+        axes.xaxis.set_ticks_position('bottom')
     axes.set_xlabel('Re', loc='right')
     axes.set_ylabel('Im', loc='top')
     axes.set_title('Mandelbrot Set')
+    figure.colorbar(image, ax=axes, label='Iterations before |z| > 2')
     figure.tight_layout()
     plt.show()
 def plot_time_complete_comparaison_number_of_processes(times, n_processes_list):
@@ -67,8 +77,8 @@ def plot_time_complete_comparaison_number_of_processes(times, n_processes_list):
     plt.show()
 
 def main():
-    mandelbrot_set = mandelbrot(resolution=10000, n_processes=8)
-    plot_mandelbrot(mandelbrot_set)
+    mandelbrot_set = mandelbrot(resolution=10000, n_processes=8, boundries=[(-0.9, -0.7), (0.1, 0.3)])
+    plot_mandelbrot(mandelbrot_set, boundaries=[(-0.9, -0.7), (0.1, 0.3)])
     #times = []
     #mandelbrot(resolution=10000, n_processes=n_processes)
         #time_end = time.time()
