@@ -1,9 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import multiprocessing as mu
-import time
-import sys 
-import threading as th
 
 
 def _mandelbrot_row(args):
@@ -11,7 +7,7 @@ def _mandelbrot_row(args):
     c_row = x_values + 1j * y_value
     z_row = np.zeros_like(c_row)
     mask_row = np.full(c_row.shape, True, dtype=bool)
-    escape_row = np.full(c_row.shape, n_max, dtype=np.int16)
+    escape_row = np.full(c_row.shape, n_max + 1, dtype=np.int16)
 
     for iteration in range(1, n_max + 1):
         z_row[mask_row] = z_row[mask_row] ** 2 + c_row[mask_row]
@@ -26,9 +22,9 @@ def mandelbrot(
     resolution,
     n_processes,
     chunk_size=8,
-    boundries=[(-2, 2), (-2, 2)]
+    boundries=((-2, 2), (-2, 2)),
+    n_max=80,
 ):  
-    n_max = 80
     x_min, x_max = boundries[0]
     y_min, y_max = boundries[1]
     x = np.linspace(x_min, x_max, resolution)
@@ -42,6 +38,8 @@ def mandelbrot(
 
 
 def plot_mandelbrot(mandelbrot_set, boundaries=((-2, 2), (-2, 2))):
+    import matplotlib.pyplot as plt
+
     (x_min, x_max), (y_min, y_max) = boundaries
     figure, axes = plt.subplots()
     image = axes.imshow(
@@ -70,25 +68,11 @@ def plot_mandelbrot(mandelbrot_set, boundaries=((-2, 2), (-2, 2))):
     figure.tight_layout()
     plt.show()
 def plot_time_complete_comparaison_number_of_processes(times, n_processes_list):
+    import matplotlib.pyplot as plt
+
     plt.plot(n_processes_list, times, marker='o')
     plt.xlabel('Number of Processes')
     plt.ylabel('Time (s)')
     plt.title('Time to Complete Mandelbrot Set Computation')
     plt.show()
 
-def main():
-    mandelbrot_set = mandelbrot(resolution=10000, n_processes=8, boundries=[(-0.9, -0.7), (0.1, 0.3)])
-    plot_mandelbrot(mandelbrot_set, boundaries=[(-0.9, -0.7), (0.1, 0.3)])
-    #times = []
-    #mandelbrot(resolution=10000, n_processes=n_processes)
-        #time_end = time.time()
-        #times.append(time_end - time_start)
-    #for i in range(len(n_processes_list)):
-            #print(f"Number of Processes: {n_processes_list[i]}, Time: {times[i]} seconds")
-    #plot_time_complete_comparaison_number_of_processes(times, n_processes_list)
-    
-
-
-if __name__ == '__main__':
-    mu.freeze_support()
-    main()
