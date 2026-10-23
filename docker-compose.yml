@@ -3,8 +3,21 @@ services:
     build: .
     expose:
       - "8000"
+    volumes:
+      - .:/app
     networks:
       - private
+
+  git-puller:
+    image: alpine/git:2.47.2
+    working_dir: /app
+    entrypoint: ["/bin/sh", "/app/git-pull-loop.sh"]
+    volumes:
+      - .:/app
+    environment:
+      GIT_BRANCH: "${GIT_BRANCH:-main}"
+      PULL_INTERVAL: "${PULL_INTERVAL:-30}"
+    restart: unless-stopped
 
   nginx:
     image: nginx:1.27-alpine
